@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Latham.Core\Latham.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="coverlet.collector" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ResponseFileTestData Include="ResponseFileTestData\**\*.rsp" />
+  </ItemGroup>
+
+  <Target Name="CopyResponseFileTestData" AfterTargets="CopyFilesToOutputDirectory">
+    <Copy
+      SourceFiles="@(ResponseFileTestData)"
+      DestinationFiles="@(ResponseFileTestData -> '$(OutputPath)%(RelativeDir)%(Filename)%(Extension)')" />
+  </Target>
+</Project>

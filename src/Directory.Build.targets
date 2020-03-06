@@ -1,0 +1,18 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Update="Mono.Options" Version="6.6.0.161" />
+    <PackageReference Update="NCrontab" Version="3.3.1" />
+    <PackageReference Update="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Update="Serilog.Sinks.Console" Version="3.1.1" />
+    <PackageReference Update="SQLitePCLRaw.bundle_e_sqlite3" Version="2.0.2" />
+    <PackageReference Update="TagLibSharp" Version="2.2.0" />
+    <PackageReference Update="Xamarin.Helpers" Version="0.32.0"/>
+    <PackageReference Update="Xamarin.ProcessControl" Version="0.32.0"/>
+
+    <!-- Unit Tests -->
+    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="16.2.0" />
+    <PackageReference Update="xunit" Version="2.4.0" />
+    <PackageReference Update="xunit.runner.visualstudio" Version="2.4.0" />
+    <PackageReference Update="coverlet.collector" Version="1.0.1" />
+  </ItemGroup>
+</Project>

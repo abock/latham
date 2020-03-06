@@ -1,0 +1,9 @@
+{
+  "sdk": {
+    "version": "3.1.101"
+  },
+  "msbuild-sdks": {
+    "Microsoft.Build.Traversal": "2.0.24",
+    "Xamarin.MSBuild.Sdk": "0.31.0"
+  }
+}

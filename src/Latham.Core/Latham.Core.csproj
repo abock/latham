@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NCrontab" />
+    <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" />
+    <PackageReference Include="TagLibSharp"/>
+    <PackageReference Include="Xamarin.Helpers" />
+    <PackageReference Include="Xamarin.ProcessControl" />
+  </ItemGroup>
+</Project>
