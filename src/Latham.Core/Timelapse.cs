@@ -64,6 +64,10 @@ namespace Latham
                     }
                 }
 
+                var tmpOutputFile = OutputFile + ".tmp.mp4";
+
+                File.Delete(tmpOutputFile);
+
                 var execStatus = await Exec.RunAsync(
                     output => {
                         Console.Write(output.Data);
@@ -75,7 +79,10 @@ namespace Latham
                     "-an",
                     "-filter:v",
                     $"setpts=PTS/{speed}",
-                    OutputFile);
+                    tmpOutputFile);
+
+                File.Delete(OutputFile);
+                File.Move(tmpOutputFile, OutputFile, true);
             }
             finally
             {
