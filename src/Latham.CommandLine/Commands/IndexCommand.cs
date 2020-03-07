@@ -120,16 +120,31 @@ namespace Latham.Commands
 
             protected override int Invoke(ProjectInfo project, IngestionIndex index)
             {
+                var totalDuration = TimeSpan.Zero;
+
                 var items = index
                     .SelectAll()
                     .Where(item => Tag is null || item.Tag == Tag)
                     .Where(item => !ApplyTimelapseFilters || project.IncludeInTimelapse(item))
                     .OrderBy(item => item.Tag)
                     .ThenBy(item => item.Timestamp)
-                    .Select(item => Path.Combine(project.BasePath ?? ".", item.FilePath));
+                    .Select(item =>
+                    {
+                        item = item.WithFilePath(Path.Combine(project.BasePath ?? ".", item.FilePath));
+                        if (!item.Duration.HasValue)
+                            item = item.WithDurationAndFileSizeByReadingFile();
+                        return item;
+                    });
 
                 foreach (var item in items)
-                    Console.WriteLine(item);
+                {
+                    if (item.Duration.HasValue)
+                        totalDuration += item.Duration.Value;
+
+                    Console.WriteLine(item.FilePath);
+                }
+
+                Console.WriteLine($"--total-input-duration {totalDuration}");
 
                 return 0;
             }

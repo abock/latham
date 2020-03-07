@@ -24,6 +24,14 @@ namespace Latham.Commands
         [Option("o|output=", "Output file for the timelapse", Required = true)]
         public string? OutputFile { get; set; }
 
+        [Option(
+            "total-input-duration=",
+            "The pre-computed total duration of all input files. Specifying this will avoid " +
+            "re-parsing the durations for each input file in order to calculate the PTS for the " +
+            "timelapse, which will save time, but if incorrect will yield a timelapse that " +
+            "does match the expected result.")]
+        public TimeSpan? TotalInputDuration { get; set; }
+
         [Option("<>", "Input files for the timelapse", Hidden = true)]
         public List<string> InputFiles { get; } = new List<string>();
 
@@ -61,6 +69,7 @@ namespace Latham.Commands
 
             var timelapse = new Timelapse(
                 InputFiles,
+                TotalInputDuration,
                 OutputFile,
                 TimeScaleFactor,
                 DesiredDuration);

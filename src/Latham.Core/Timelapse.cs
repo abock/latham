@@ -18,20 +18,26 @@ namespace Latham
     public sealed class Timelapse
     {
         public IReadOnlyList<string> InputFiles { get; }
+        public TimeSpan? TotalInputDuration { get; }
         public string OutputFile { get; }
         public double? TimeScaleFactor { get; }
         public TimeSpan? DesiredDuration { get; }
 
         public Timelapse(
             IReadOnlyList<string> inputFiles,
+            TimeSpan? totalInputDuration,
             string outputFile,
             double? timeScaleFactor,
             TimeSpan? desiredDuration)
         {
             InputFiles = inputFiles
                 ?? throw new ArgumentNullException(nameof(inputFiles));
+
+            TotalInputDuration = totalInputDuration;
+
             OutputFile = outputFile
                 ?? throw new ArgumentNullException(nameof(outputFile));
+
             TimeScaleFactor = timeScaleFactor;
             DesiredDuration = desiredDuration;
         }
@@ -79,6 +85,9 @@ namespace Latham
 
         TimeSpan CalculateTotalInputDuration(CancellationToken cancellationToken)
         {
+            if (TotalInputDuration.HasValue)
+                return TotalInputDuration.Value;
+
             var totalDuration = TimeSpan.Zero;
 
             foreach (var inputFile in InputFiles)
