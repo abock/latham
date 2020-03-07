@@ -25,7 +25,7 @@ namespace Latham
                         _ => double.Parse(interpolation.Variable)
                     }))?.ToString());
 
-        static readonly DateTime Now = DateTime.Now;
+        static readonly DateTime Now = new DateTime(2020, 3, 25, 11, 12, 13, 123, DateTimeKind.Local);
 
         public static IEnumerable<object?[]> InterpolationTestData => new List<object?[]>
         {
@@ -156,16 +156,16 @@ namespace Latham
             },
             new object?[]
             {
-                "{a,b:c}ww{b,c:d}xx{c,d:e}yy{d,e:f}zz{e,f:g}",
+                "{a,1:c}ww{b,2:d}xx{c,3:e}yy{d,4:f}zz{e,5:g}",
                 new[]
                 {
-                    new Interpolation("a", "b", "c"),
-                    new Interpolation("b", "c", "d"),
-                    new Interpolation("c", "d", "e"),
-                    new Interpolation("d", "e", "f"),
-                    new Interpolation("e", "f", "g")
+                    new Interpolation("a", "1", "c"),
+                    new Interpolation("b", "2", "d"),
+                    new Interpolation("c", "3", "e"),
+                    new Interpolation("d", "4", "f"),
+                    new Interpolation("e", "5", "g")
                 },
-                "{a,b:c}ww{b,c:d}xx{c,d:e}yy{d,e:f}zz{e,f:g}"
+                "{a,1:c}ww{b,2:d}xx{c,3:e}yy{d,4:f}zz{e,5:g}"
             },
             new object?[]
             {
@@ -178,12 +178,12 @@ namespace Latham
             },
             new object?[]
             {
-                "{variable,alignment}",
+                "{variable,10}",
                 new[]
                 {
-                    new Interpolation("variable", "alignment", null)
+                    new Interpolation("variable", "10", null)
                 },
-                "{variable,alignment}"
+                "{variable,10}"
             },
             new object?[]
             {
@@ -196,12 +196,12 @@ namespace Latham
             },
             new object?[]
             {
-                "{variable,alignment:format}",
+                "{variable,-10:format}",
                 new[]
                 {
-                    new Interpolation("variable", "alignment", "format")
+                    new Interpolation("variable", "-10", "format")
                 },
-                "{variable,alignment:format}"
+                "{variable,-10:format}"
             },
             new object?[]
             {
