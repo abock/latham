@@ -5,11 +5,11 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Latham.Core", "src\Latham.Core\Latham.Core.csproj", "{75B27915-D60E-5B96-8C92-3FE6E1EA06B0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Latham.UniFi", "src\Latham.UniFi\Latham.UniFi.csproj", "{D98992BB-14D2-5548-B51B-741272C9ED87}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Latham.CommandLine", "src\Latham.CommandLine\Latham.CommandLine.csproj", "{AA121509-02E1-598F-93C9-404E0B373023}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Latham.Core.Tests", "src\Latham.Core.Tests\Latham.Core.Tests.csproj", "{8FC45CA9-5735-58DB-9693-7E8066E07AB4}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Latham.UniFi", "src\Latham.UniFi\Latham.UniFi.csproj", "{D98992BB-14D2-5548-B51B-741272C9ED87}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,11 +21,11 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{75B27915-D60E-5B96-8C92-3FE6E1EA06B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{75B27915-D60E-5B96-8C92-3FE6E1EA06B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D98992BB-14D2-5548-B51B-741272C9ED87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D98992BB-14D2-5548-B51B-741272C9ED87}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AA121509-02E1-598F-93C9-404E0B373023}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{AA121509-02E1-598F-93C9-404E0B373023}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8FC45CA9-5735-58DB-9693-7E8066E07AB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8FC45CA9-5735-58DB-9693-7E8066E07AB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D98992BB-14D2-5548-B51B-741272C9ED87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D98992BB-14D2-5548-B51B-741272C9ED87}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 EndGlobal
