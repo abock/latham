@@ -1,4 +1,4 @@
-name: .NET Core
+name: Build & Deploy
 
 on:
   push:
@@ -13,15 +13,28 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Setup .NET Core
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 3.1.101
+
+    - name: Dump Environment
+      run: env
+
     - name: Restore
       run: dotnet restore
+
     - name: Build
       run: dotnet build --configuration Release --no-restore
+
     - name: Test
       run: dotnet test --configuration Release --no-restore --no-build
+
     - name: Pack
       run: dotnet pack --configuration Release --no-restore --no-build
+
+    - name: Push
+      run: find _artifacts -name \*.nupkg -and -not -name \*.symbols.nupkg -exec dotnet nuget push --source https://www.myget.org/F/latham/api/v2/package --api-key "${MYGET_PUSH_API_KEY}" {} \;
+      env:
+        MYGET_PUSH_API_KEY: ${{ secrets.MYGET_PUSH_API_KEY }}
