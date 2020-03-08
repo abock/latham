@@ -20,21 +20,39 @@ jobs:
         dotnet-version: 3.1.101
 
     - name: Dump Environment
-      run: env
+      run: env | sort
 
     - name: Restore
       run: dotnet restore
 
     - name: Build
-      run: dotnet build --configuration Release --no-restore
+      run: dotnet build -c Release --no-restore
 
     - name: Test
-      run: dotnet test --configuration Release --no-restore --no-build
+      run: dotnet test -c Release --no-restore --no-build
+
+    - name: Publish
+      run: |
+        set -e
+        for rid in linux-x64 win10-x64 osx.10.14-x64; do
+          dotnet publish -c Release -r $rid src/Latham.CommandLine/Latham.CommandLine.csproj
+          (
+            cd src/Latham.CommandLine/bin/Release/netcoreapp3.1/$rid
+            mv publish/Latham.CommandLine publish/latham
+            mv publish "_artifacts/latham-${PROJECT_VERSION}_${rid}"
+          )
+        done
 
     - name: Pack
-      run: dotnet pack --configuration Release --no-restore --no-build
+      run: dotnet pack -c Release --no-restore --no-build
 
     - name: Push
       run: find _artifacts -name \*.nupkg -and -not -name \*.symbols.nupkg -exec dotnet nuget push --source https://www.myget.org/F/latham/api/v2/package --api-key "${MYGET_PUSH_API_KEY}" {} \;
       env:
         MYGET_PUSH_API_KEY: ${{ secrets.MYGET_PUSH_API_KEY }}
+
+    - uses: actions/upload-artifact@v1
+      name: Upload Artifacts
+      with:
+        name: Artifacts
+        path: _artifacts

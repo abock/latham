@@ -1,9 +1,12 @@
 <Project>
   <PropertyGroup>
+    <InGitHubActions>false</InGitHubActions>
+    <InGitHubActions Condition="'$(GITHUB_ACTIONS)' == 'True'">true</InGitHubActions>
+
     <InVSTS>false</InVSTS>
     <InVSTS Condition="'$(TF_BUILD)' == 'True'">true</InVSTS>
 
     <InCI>false</InCI>
-    <InCI Condition="$(InVSTS)">true</InCI>
+    <InCI Condition="$(InGitHubActions) Or $(InVSTS)">true</InCI>
   </PropertyGroup>
 </Project>

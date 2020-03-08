@@ -34,6 +34,16 @@
       <Version>$(PackageVersion)$(VersionMetadataPlusLabel)</Version>
     </PropertyGroup>
 
+    <WriteLinesToFile
+      File="$([MSBuild]::NormalizePath($(MSBuildThisFileDirectory)..\_artifacts\VERSION))"
+      Lines="$(Version)"
+      Overwrite="true"/>
+
+    <Message
+      Condition="$(InGitHubActions)"
+      Importance="high"
+      Text="::set-env name=PROJECT_VERSION::$(Version)"/>
+
     <Message
       Condition="$(InVSTS)"
       Importance="high"
