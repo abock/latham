@@ -1,6 +1,8 @@
+
 # Latham: Create Long-Running Timelapse Videos
 
 ![.NET Core](https://github.com/abock/latham/workflows/.NET%20Core/badge.svg)
+
 
 Latham is a fully featured multi-source video stream recording, indexing, and
 timelapsing project geared towards creating long-running timelapse footage.

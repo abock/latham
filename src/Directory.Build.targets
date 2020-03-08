@@ -1,9 +1,11 @@
 <Project>
+  <Import Project="Version.targets"/>
+
   <ItemGroup>
+    <PackageReference Update="GitInfo" Version="2.0.26" />
     <PackageReference Update="Mono.Options" Version="6.6.0.161" />
     <PackageReference Update="NCrontab" Version="3.3.1" />
     <PackageReference Update="Newtonsoft.Json" Version="12.0.3" />
-    <PackageReference Update="Serilog.Sinks.Console" Version="3.1.1" />
     <PackageReference Update="SQLitePCLRaw.bundle_e_sqlite3" Version="2.0.2" />
     <PackageReference Update="TagLibSharp" Version="2.2.0" />
     <PackageReference Update="Xamarin.Helpers" Version="0.32.0"/>
