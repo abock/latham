@@ -4,6 +4,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>latham</ToolCommandName>
+    <AssemblyName>latham</AssemblyName>
+    <PackageId>latham</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
