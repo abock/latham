@@ -29,6 +29,12 @@ namespace Latham
                 previousHandler(signal);
             }
 
+            if (signal == SIGHUP)
+            {
+                Console.WriteLine("HUP IGNORE");
+                return;
+            }
+
             if (signal == SIGINT)
             {
                 if (pidFile is string)

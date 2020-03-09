@@ -47,6 +47,9 @@ namespace Latham.Commands
             [Option("status", "Status of a possible running background instance")]
             public bool Status { get; set; }
 
+            [Option("ffmpeg=", "Which ffmpeg binary to use. Defaults to 'ffmpeg' from PATH.")]
+            public string FFMpegPath { get; set; } = "ffmpeg";
+
             Daemon? daemon;
 
             public ScheduleCommand() : base("schedule", "Run a scheduled recording session as described by the project")
@@ -55,6 +58,8 @@ namespace Latham.Commands
 
             protected override int Invoke(ProjectInfo project, IngestionIndex index)
             {
+                FFMpeg.Path = FFMpegPath;
+
                 project = project.Evaluate();
 
                 daemon = Daemon.Create(
@@ -136,17 +141,26 @@ namespace Latham.Commands
                 return 0;
             }
 
-            Task RecordSource(
+            async Task RecordSource(
                 RecordingSourceInfo recordingSourceInfo,
                 CancellationToken cancellationToken)
             {
-                if (!recordingSourceInfo.Duration.HasValue)
-                    return Task.CompletedTask;
+                try
+                {
+                    if (!recordingSourceInfo.Duration.HasValue)
+                        return;
 
-                return new StreamRecorder(
-                    recordingSourceInfo.Uri,
-                    recordingSourceInfo.CreateOutputPath(),
-                    recordingSourceInfo.Duration.Value).InvokeAsync();
+                    await new StreamRecorder(
+                        recordingSourceInfo.Uri,
+                        recordingSourceInfo.CreateOutputPath(),
+                        recordingSourceInfo.Duration.Value)
+                        .InvokeAsync()
+                        .ConfigureAwait(false);
+                }
+                catch (Exception e)
+                {
+                    Console.Error.WriteLine(e);
+                }
             }
         }
 

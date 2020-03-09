@@ -11,8 +11,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Xamarin.ProcessControl;
-
 namespace Latham
 {
     public sealed class StreamRecorder
@@ -37,11 +35,12 @@ namespace Latham
         {
             Directory.CreateDirectory(Path.GetDirectoryName(OutputFile));
 
-            var execStatus = await Exec.RunAsync(
-                output => {
-                    Console.Write(output.Data);
-                },
-                "ffmpeg",
+            var outputStream = File.OpenWrite(Path.ChangeExtension(OutputFile, "log"));
+            var outputWriter = new StreamWriter(outputStream, leaveOpen: true);
+
+            var exitCode = await FFMpeg.RunAsync(
+                outputWriter,
+                outputWriter,
                 "-hide_banner",
                 "-rtsp_transport", "tcp",
                 "-i", InputUri.ToString(),
@@ -51,9 +50,11 @@ namespace Latham
                 "-reset_timestamps", "1",
                 OutputFile);
 
-            if (execStatus.ExitCode != 0)
+            outputStream.Dispose();
+
+            if (exitCode != 0)
                 throw new Exception(
-                    $"ffmpeg exited {execStatus.ExitCode} when attempting to record " +
+                    $"ffmpeg exited {exitCode} when attempting to record " +
                     $"{InputUri} to {OutputFile} for {Duration}.");
         }
     }
