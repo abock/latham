@@ -10,6 +10,7 @@ namespace Latham
     sealed class PosixDaemon : Daemon
     {
         readonly Dictionary<int, sig_t> previousSignalHandlers = new Dictionary<int, sig_t>();
+        readonly sig_t signalHandler;
         readonly string pidFile;
         readonly Func<string> statusHandler;
 
@@ -17,6 +18,7 @@ namespace Latham
         {
             this.pidFile = pidFile;
             this.statusHandler = statusHandler;
+            this.signalHandler = new sig_t(SignalHandler);
         }
 
         public override bool IsSupported => true;
@@ -81,10 +83,10 @@ namespace Latham
             if (CurrentProcess.Id != process.Id)
                 return DaemonStartAction.AlreadyRunning;
 
-            if (signal(SIGINT, SignalHandler) is sig_t previousInt)
+            if (signal(SIGINT, signalHandler) is sig_t previousInt)
                 previousSignalHandlers.Add(SIGINT, previousInt);
 
-            if (signal(SIGHUP, SignalHandler) is sig_t previousHup)
+            if (signal(SIGHUP, signalHandler) is sig_t previousHup)
                 previousSignalHandlers.Add(SIGHUP, previousHup);
 
             return DaemonStartAction.StartNormally;
