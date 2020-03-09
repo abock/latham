@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -34,6 +35,20 @@ namespace Latham.Commands
 
         sealed class ScheduleCommand : IndexCommand
         {
+            [Option("d|daemon", "Run as a background daemon")]
+            public bool Daemonize { get; set; }
+
+            [Option("start", "Run as a background daemon", Hidden = true)]
+            public bool Start { get; set; }
+
+            [Option("stop", "Stop the running background instance")]
+            public bool Stop { get; set; }
+
+            [Option("status", "Status of a possible running background instance")]
+            public bool Status { get; set; }
+
+            Daemon? daemon;
+
             public ScheduleCommand() : base("schedule", "Run a scheduled recording session as described by the project")
             {
             }
@@ -42,6 +57,63 @@ namespace Latham.Commands
             {
                 project = project.Evaluate();
 
+                daemon = Daemon.Create(
+                    Path.Combine(project.BasePath ?? ".", "latham.pid"),
+                    () => "running");
+
+                if ((Stop || Status || Daemonize) && !daemon.IsSupported)
+                {
+                    Console.Error.WriteLine("Daemon mode is not supported on this system.");
+                    return 1;
+                }
+
+                if (Status)
+                {
+                    if (daemon.GetExistingProcess() is Process process)
+                    {
+                        Console.WriteLine(process.Id);
+                        return 0;
+                    }
+
+                    Console.WriteLine("stopped");
+                    return 1;
+                }
+                else if (Stop)
+                {
+                    if (daemon.Stop(out var process) && process is object)
+                    {
+                        Console.WriteLine($"[PID {process.Id}] SIGINT was sent");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Record daemon is not running or unable to find PID for it.");
+                    }
+                    return 0;
+                }
+                else if (Daemonize)
+                {
+                    var startAction = daemon.Start(out var process);
+                    switch (startAction)
+                    {
+                        case DaemonStartAction.StartDaemonProcess:
+                            process = daemon.StartProcess();
+                            Console.WriteLine($"[PID {process.Id}] started");
+                            return 0;
+                        case DaemonStartAction.AlreadyRunning:
+                            Console.WriteLine($"[PID {process.Id}] instance already running");
+                            return 1;
+                        case DaemonStartAction.StartNormally:
+                            break;
+                        default:
+                            throw new NotImplementedException($"{nameof(DaemonStartAction)}.{startAction}");
+                    }
+                }
+
+                return RealInvoke(project, index);
+            }
+
+            int RealInvoke(ProjectInfo project, IngestionIndex index)
+            {
                 if (project.Recordings is null)
                     throw new Exception("No recordings configured for this project.");
 
