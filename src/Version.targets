@@ -9,13 +9,10 @@
       <GitBranch Condition="'$(SYSTEM_PULLREQUEST_TARGETBRANCH)' != ''">$(SYSTEM_PULLREQUEST_TARGETBRANCH)</GitBranch>
       <GitBranch Condition="'$(SYSTEM_PULLREQUEST_TARGETBRANCH)' == '' and '$(BUILD_SOURCEBRANCHNAME)' != ''">$(BUILD_SOURCEBRANCHNAME)</GitBranch>
       <GitBranch Condition="'$(APPVEYOR_REPO_BRANCH)' != ''">$(APPVEYOR_REPO_BRANCH)</GitBranch>
+      <GitBaseVersionPatch>$(GitCommits)</GitBaseVersionPatch>
     </PropertyGroup>
 
     <ItemGroup>
-      <VersionMetadata
-        Condition="'$(GitCommits)' != '0'"
-        Include="$(GitCommits)"/>
-
       <VersionMetadata
         Condition="$(InVSTS) and '$(BUILD_REASON)' == 'PullRequest'"
         Include="pr.$(BUILD_SOURCEBRANCH.Substring(10).TrimEnd('/merge'))"/>
@@ -25,6 +22,10 @@
       <VersionMetadata
         Condition="$(InVSTS)"
         Include="vsts.$(BUILD_BUILDID)"/>
+
+      <VersionMetadata
+        Condition="$(InGitHubActions)"
+        Include="gha.$(GITHUB_RUN_ID)"/>
     </ItemGroup>
 
     <PropertyGroup>
