@@ -8,6 +8,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 using Newtonsoft.Json;
 
@@ -67,10 +68,10 @@ namespace Latham.Project.Model
                 throw new ArgumentNullException(nameof(predicateString));
 
             var parts = predicateString.Split("..", 2, StringSplitOptions.RemoveEmptyEntries);
-            var start = Parse(parts[0], culture);
+            var start = Parse(parts[0], culture, out var endTimeSpecified);
             var end = parts.Length == 1
                 ? start
-                : Parse(parts[1], culture);
+                : Parse(parts[1], culture, out endTimeSpecified);
 
             if (start is null || end is null)
                 throw new FormatException("Unable to parse predicate (should not be reached)");
@@ -90,6 +91,9 @@ namespace Latham.Project.Model
             {
                 var endDateTime = (DateTime)end;
 
+                if (!endTimeSpecified)
+                    endDateTime = endDateTime.Date.AddDays(1).Subtract(TimeSpan.FromTicks(1));
+
                 if (startDateTime.Date == DateTime.MinValue && endDateTime.Date == DateTime.MinValue)
                     return new TimelapsePredicate(
                         predicateString,
@@ -102,24 +106,44 @@ namespace Latham.Project.Model
 
             throw new NotImplementedException();
 
-            static object Parse(string str, CultureInfo culture)
+            static object Parse(string str, CultureInfo culture, out bool timeSpecified)
             {
+                timeSpecified = false;
+
                 if (TryParseDayOfWeek(str, culture, out var dayOfWeek))
                     return dayOfWeek;
 
-                if (DateTime.TryParse(str, culture, DefaultDateTimeStyles, out var dateTime))
+                if (TryParseDateTime(str, culture, out var dateTime, out timeSpecified))
                     return dateTime;
 
                 throw new FormatException($"Unable to parse predicate part '{str}'");
             }
         }
 
-        const DateTimeStyles DefaultDateTimeStyles =
-            DateTimeStyles.NoCurrentDateDefault |
-            DateTimeStyles.AssumeLocal |
-            DateTimeStyles.AllowLeadingWhite |
-            DateTimeStyles.AllowTrailingWhite |
-            DateTimeStyles.AllowWhiteSpaces;
+        // FIXME: super lame and not culturally aware
+        static readonly Regex timeSpecifiedRegex = new Regex(@":|\d+\s*(am|pm)", RegexOptions.IgnoreCase);
+
+        static bool TryParseDateTime(
+            string str,
+            CultureInfo culture,
+            out DateTime dateTime,
+            out bool timeSpecified)
+        {
+            const DateTimeStyles DefaultDateTimeStyles =
+                DateTimeStyles.NoCurrentDateDefault |
+                DateTimeStyles.AssumeLocal |
+                DateTimeStyles.AllowLeadingWhite |
+                DateTimeStyles.AllowTrailingWhite |
+                DateTimeStyles.AllowWhiteSpaces;
+
+            timeSpecified = timeSpecifiedRegex.IsMatch(str);
+
+            return DateTime.TryParse(
+                str,
+                culture,
+                DefaultDateTimeStyles,
+                out dateTime);
+        }
 
         static readonly Dictionary<CultureInfo, Dictionary<string, DayOfWeek>> dayOfWeekNames
             = new Dictionary<CultureInfo, Dictionary<string, DayOfWeek>>();
@@ -157,7 +181,7 @@ namespace Latham.Project.Model
             public override TimelapsePredicate ReadJson(
                 JsonReader reader,
                 Type objectType,
-                TimelapsePredicate existingValue,
+                TimelapsePredicate? existingValue,
                 bool hasExistingValue,
                 JsonSerializer serializer)
             {
@@ -169,7 +193,7 @@ namespace Latham.Project.Model
 
             public override void WriteJson(
                 JsonWriter writer,
-                TimelapsePredicate value,
+                TimelapsePredicate? value,
                 JsonSerializer serializer)
             {
                 if (value is TimelapsePredicate timelapsePredicate)

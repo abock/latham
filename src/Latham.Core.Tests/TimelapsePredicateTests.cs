@@ -9,6 +9,9 @@ namespace Latham.Project.Model
     {
         public static IEnumerable<object?[]> EvaluateTestData => new List<object?[]>
         {
+            new object?[] { "2020-02-5", DateTime.Parse("2020-02-05"), true },
+            new object?[] { "2020-02-5", DateTime.Parse("2020-02-05 00:00:01"), true },
+            new object?[] { "2020-02-5", DateTime.Parse("2020-02-05 23:59:59"), true },
             new object?[] { "2020-02-5 .. 2020-2-10", DateTime.Parse("2020-02-04"), false },
             new object?[] { "2020-02-5 .. 2020-2-10", DateTime.Parse("2020-02-05"), true },
             new object?[] { "2020-02-5 .. 2020-2-10", DateTime.Parse("2020-02-06"), true },
@@ -16,6 +19,8 @@ namespace Latham.Project.Model
             new object?[] { "2020-02-5 .. 2020-2-10", DateTime.Parse("2020-02-08"), true },
             new object?[] { "2020-02-5 .. 2020-2-10", DateTime.Parse("2020-02-09"), true },
             new object?[] { "2020-02-5 .. 2020-2-10", DateTime.Parse("2020-02-10"), true },
+            new object?[] { "2020-02-5 .. 2020-2-10", DateTime.Parse("2020-02-10 00:00:01"), true },
+            new object?[] { "2020-02-5 .. 2020-2-10", DateTime.Parse("2020-02-10 23:59:59"), true },
             new object?[] { "2020-02-5 .. 2020-2-10", DateTime.Parse("2020-02-11"), false },
 
             new object?[] { "5pm .. 7pm", DateTime.Parse("2020-10-3 16:59:59"), false },
