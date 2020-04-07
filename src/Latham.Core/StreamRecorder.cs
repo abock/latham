@@ -35,12 +35,8 @@ namespace Latham
         {
             Directory.CreateDirectory(Path.GetDirectoryName(OutputFile));
 
-            var outputStream = File.OpenWrite(Path.ChangeExtension(OutputFile, "log"));
-            var outputWriter = new StreamWriter(outputStream, leaveOpen: true);
-
             var exitCode = await FFMpeg.RunAsync(
-                outputWriter,
-                outputWriter,
+                default,
                 "-hide_banner",
                 "-rtsp_transport", "tcp",
                 "-i", InputUri.ToString(),
@@ -49,8 +45,6 @@ namespace Latham
                 "-t", Duration.TotalSeconds.ToString(CultureInfo.InvariantCulture),
                 "-reset_timestamps", "1",
                 OutputFile);
-
-            outputStream.Dispose();
 
             if (exitCode != 0)
                 throw new Exception(

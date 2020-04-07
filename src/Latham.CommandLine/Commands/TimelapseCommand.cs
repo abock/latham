@@ -35,7 +35,7 @@ namespace Latham.Commands
         [Option("<>", "Input files for the timelapse", Hidden = true)]
         public List<string> InputFiles { get; } = new List<string>();
 
-        public TimelapseCommand() : base("timelapse", "Some help")
+        public TimelapseCommand() : base(null, "timelapse", "Some help")
         {
         }
 

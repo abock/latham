@@ -11,7 +11,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-using Xamarin.ProcessControl;
+using Serilog;
 
 namespace Latham
 {
@@ -66,13 +66,21 @@ namespace Latham
 
                 var tmpOutputFile = OutputFile + ".tmp.mp4";
 
+                Console.WriteLine(inputListFilePath);
+
                 File.Delete(tmpOutputFile);
 
-                var execStatus = await Exec.RunAsync(
-                    output => {
-                        Console.Write(output.Data);
+                var execStatus = await FFMpeg.RunAsync(
+                    default,
+                    time =>
+                    {
+                        if (DesiredDuration.HasValue)
+                            Log.Information(
+                                "{Time} of {Duration} = {Progress:0.00}%",
+                                time,
+                                DesiredDuration.Value,
+                                (time.Ticks / (double)DesiredDuration.Value.Ticks) * 100.0);
                     },
-                    "ffmpeg",
                     "-f", "concat",
                     "-safe", "0",
                     "-i", inputListFilePath,

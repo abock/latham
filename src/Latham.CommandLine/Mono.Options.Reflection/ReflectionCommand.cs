@@ -19,12 +19,32 @@ namespace Mono.Options.Reflection
 {
     abstract class ReflectionCommand : Command
     {
+        public static string? ProgramName { get; set; }
+
+        public static Func<ReflectionCommand, string, string> UsageLine { get; set; }
+            = (command, fullCommandName) => $"usage: {ProgramName} [GLOBAL OPTIONS] {fullCommandName} [OPTIONS]";
+
         static readonly Regex DirectiveRegex = new Regex(@"^\[(?<directive>\w+)\]$");
 
-        protected ReflectionCommand(string name, string? help = null)
+        protected ReflectionCommand(
+            CommandSet? commandSet,
+            string name,
+            string? help = null)
             : base(name, help)
         {
-            Options = new OptionSet();
+            var fullCommandName = name;
+            if (commandSet?.Suite is string suite)
+                fullCommandName = $"{suite} {name}";
+
+            Options = new OptionSet
+            {
+                UsageLine(this, fullCommandName),
+                "",
+                Help,
+                "",
+                "Options:",
+                ""
+            };
 
             foreach (var property in GetType().GetProperties())
             {

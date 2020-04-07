@@ -20,14 +20,25 @@ namespace Latham.Project
         public static IEnumerable<IngestionItem> EnumerateIngestionFiles(
             ProjectInfo projectInfo,
             IEnumerable<string>? ingestionCandidatePaths = null)
+            => EnumerateIngestionFiles(
+                projectInfo,
+                parseMetadataFromFile: true,
+                ingestionCandidatePaths);
+
+        public static IEnumerable<IngestionItem> EnumerateIngestionFiles(
+            ProjectInfo projectInfo,
+            bool parseMetadataFromFile,
+            IEnumerable<string>? ingestionCandidatePaths = null)
             => projectInfo
                 .Ingestions
                 .SelectMany(ingestion => EnumerateIngestionFiles(
                     ingestion,
+                    parseMetadataFromFile,
                     ingestionCandidatePaths));
 
         public static IEnumerable<IngestionItem> EnumerateIngestionFiles(
             IngestionInfo ingestionInfo,
+            bool parseMetadataFromFile,
             IEnumerable<string>? ingestionCandidatePaths = null,
             string? basePath = null)
         {
@@ -51,7 +62,8 @@ namespace Latham.Project
                 .Select(item => IngestionItem.FromFileSystem(
                     basePath,
                     item.FullPath,
-                    item.Match));
+                    item.Match,
+                    parseDuration: parseMetadataFromFile));
         }
     }
 }

@@ -21,20 +21,27 @@ namespace Latham.Commands
     {
         public ProjectCommandSet() : base("project")
         {
-            Add(new ProjectCommand.DumpCommand());
-            Add(new ProjectCommand.ScheduleCommand());
+            Add(new ProjectCommand.DumpCommand(this));
+            Add(new ProjectCommand.ScheduleCommand(this));
         }
     }
 
     abstract class ProjectCommand : ReflectionCommand
     {
-        [Option("p|project=", "A latham.json project file.", Required = true)]
+        [Option("p|project=", "A latham.json project file.", Required = true, Hidden = true)]
         public string? ProjectFilePath { get; set; }
 
         [Option("<>", "Project files", Hidden = true)]
         public List<string> InputFiles { get; } = new List<string>();
 
-        protected ProjectCommand(string name, string? help) : base(name, help)
+        protected ProjectCommand(
+            CommandSet commandSet,
+            string name,
+            string? help)
+            : base(
+                commandSet,
+                name,
+                help)
         {
         }
 
@@ -45,6 +52,9 @@ namespace Latham.Commands
                 ProjectFilePath = InputFiles[0];
                 InputFiles.RemoveAt(0);
             }
+
+            if (ProjectFilePath is null)
+                ProjectFilePath = Program.ProjectFilePath;
 
             return base.BeforeInvoke(directive);
         }
@@ -66,7 +76,8 @@ namespace Latham.Commands
             [Option("e|evaluate", "Evaluate the project file.")]
             public bool Evaluate { get; set; }
 
-            public DumpCommand() : base(
+            public DumpCommand(CommandSet commandSet) : base(
+                commandSet,
                 "dump",
                 "Dump project file's JSON representations.")
             {
@@ -106,7 +117,8 @@ namespace Latham.Commands
             [Option("c|count=", "Show up to VALUE number of timings starting at the provided --start time. Defaults to 100.")]
             public int Count { get; set; } = 100;
 
-            public ScheduleCommand() : base(
+            public ScheduleCommand(CommandSet commandSet) : base(
+                commandSet,
                 "schedule",
                 "Show the timelapse schedule for a project.")
             {

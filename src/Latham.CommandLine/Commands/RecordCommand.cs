@@ -14,6 +14,8 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Serilog;
+
 using Mono.Options;
 using Mono.Options.Reflection;
 
@@ -29,8 +31,8 @@ namespace Latham.Commands
     {
         public RecordCommandSet() : base("record")
         {
-            Add(new ScheduleCommand());
-            Add(new BackfillCommand());
+            Add(new ScheduleCommand(this));
+            Add(new BackfillCommand(this));
         }
 
         sealed class ScheduleCommand : IndexCommand
@@ -44,7 +46,11 @@ namespace Latham.Commands
             [Option("stop", "Stop the running background instance")]
             public bool Stop { get; set; }
 
-            [Option("status", "Status of a possible running background instance")]
+            [Option(
+                "status",
+                "Return the status of a possible running background instance. " +
+                "If an instance is running, its PID is written to stdout and exits 0. " +
+                "Otherwise 'stopped' is writen to stdout and exits 1.")]
             public bool Status { get; set; }
 
             [Option("ffmpeg=", "Which ffmpeg binary to use. Defaults to 'ffmpeg' from PATH.")]
@@ -52,7 +58,10 @@ namespace Latham.Commands
 
             Daemon? daemon;
 
-            public ScheduleCommand() : base("schedule", "Run a scheduled recording session as described by the project")
+            public ScheduleCommand(CommandSet commandSet) : base(
+                commandSet,
+                "schedule",
+                "Run a scheduled recording session as described by the project")
             {
             }
 
@@ -67,16 +76,13 @@ namespace Latham.Commands
                     () => "running");
 
                 if ((Stop || Status || Daemonize) && !daemon.IsSupported)
-                {
-                    Console.Error.WriteLine("Daemon mode is not supported on this system.");
-                    return 1;
-                }
+                    throw new NotSupportedException("Daemon mode is not supported on this system.");
 
                 if (Status)
                 {
                     if (daemon.GetExistingProcess() is Process process)
                     {
-                        Console.WriteLine(process.Id);
+                        Console.WriteLine("{PID}", process.Id);
                         return 0;
                     }
 
@@ -145,21 +151,29 @@ namespace Latham.Commands
                 RecordingSourceInfo recordingSourceInfo,
                 CancellationToken cancellationToken)
             {
+                string? outputPath = null;
+
                 try
                 {
                     if (!recordingSourceInfo.Duration.HasValue)
                         return;
 
+                    outputPath = recordingSourceInfo.CreateOutputPath();
+
                     await new StreamRecorder(
                         recordingSourceInfo.Uri,
-                        recordingSourceInfo.CreateOutputPath(),
+                        outputPath,
                         recordingSourceInfo.Duration.Value)
                         .InvokeAsync()
                         .ConfigureAwait(false);
                 }
                 catch (Exception e)
                 {
-                    Console.Error.WriteLine(e);
+                    Log.Error(
+                        e,
+                        "failed to record {URI} to {OutputPath}",
+                        recordingSourceInfo.Uri,
+                        outputPath);
                 }
             }
         }
@@ -175,7 +189,8 @@ namespace Latham.Commands
             [Option("d|dry-run", "Don't actually download any recordings or update the index")]
             public bool DryRun { get; set; }
 
-            public BackfillCommand() : base(
+            public BackfillCommand(CommandSet commandSet) : base(
+                commandSet,
                 "backfill",
                 "Find any missing recordings in an index as computed from a project's schedule.")
             {
@@ -241,8 +256,8 @@ namespace Latham.Commands
                                 // ... so keep track of the nearest offset before where our data
                                 // went missing, and hope that the outage didn't occur during
                                 // a timezone change.
-                                var timestamp = item.Timestamp.Value.LocalDateTime;
-                                utcOffset = timestamp - item.Timestamp.Value.UtcDateTime;
+                                var timestamp = item.Timestamp.Value.UtcDateTime;
+                                utcOffset = item.Timestamp.Value.LocalDateTime - timestamp;
 
                                 if (new DateTimeOffsetRange(
                                     timestamp - Tolerance,
@@ -309,13 +324,24 @@ namespace Latham.Commands
                 {
                     if (backfillQueue.TryDequeue(out var recording))
                     {
-                        var item = await DownloadRecording(
-                            recording.RecordingSource,
-                            recording.Item,
-                            cancellationToken).ConfigureAwait(false);
+                        try
+                        {
+                            var item = await DownloadRecording(
+                                recording.RecordingSource,
+                                recording.Item,
+                                cancellationToken).ConfigureAwait(false);
 
-                        if (!DryRun)
-                            index.Insert(item);
+                            if (!DryRun)
+                                index.Insert(item);
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Error(
+                                e,
+                                "unable to download {Recording} from {Source}",
+                                recording.Item,
+                                recording.RecordingSource);
+                        }
                     }
                 }
             }
@@ -390,10 +416,9 @@ namespace Latham.Commands
 
                 if (!DryRun)
                 {
-                    var downloadPath = fullPath + ".download.mp4";
+                    var downloadPath = fullPath + ".download";
 
                     File.Delete(downloadPath);
-                    File.Delete(fullPath);
 
                     await apiClient.DownloadVideoAsync(
                         camera,
@@ -403,11 +428,10 @@ namespace Latham.Commands
                         downloadPath,
                         cancellationToken);
 
-                    var execStatus = await Exec.RunAsync(
-                        output => {
-                            Console.Write(output.Data);
-                        },
-                        "ffmpeg",
+                    File.Delete(fullPath);
+
+                    var execStatus = await FFMpeg.RunAsync(
+                        cancellationToken,
                         "-i", downloadPath,
                         "-vcodec", "copy",
                         "-acodec", "copy",

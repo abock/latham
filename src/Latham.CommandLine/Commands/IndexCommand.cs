@@ -13,6 +13,8 @@ using System.Linq;
 using Mono.Options;
 using Mono.Options.Reflection;
 
+using Serilog;
+
 using Latham.Project;
 using Latham.Project.Model;
 
@@ -22,9 +24,9 @@ namespace Latham.Commands
     {
         public IndexCommandSet() : base("index")
         {
-            Add(new IndexCommand.RebuildCommand());
-            Add(new IndexCommand.AddCommand());
-            Add(new IndexCommand.QueryCommand());
+            Add(new IndexCommand.RebuildCommand(this));
+            Add(new IndexCommand.AddCommand(this));
+            Add(new IndexCommand.QueryCommand(this));
         }
     }
 
@@ -33,7 +35,14 @@ namespace Latham.Commands
         [Option("i|index=", "The index file path to use.")]
         public string? IndexFilePath { get; set; }
 
-        protected IndexCommand(string name, string? help) : base(name, help)
+        protected IndexCommand(
+            CommandSet commandSet,
+            string name,
+            string? help)
+            : base(
+                commandSet,
+                name,
+                help)
         {
         }
 
@@ -50,7 +59,14 @@ namespace Latham.Commands
 
         public sealed class RebuildCommand : IndexCommand
         {
-            public RebuildCommand() : base(
+            [Option("dry-run", "Do not update the index on disk, just walk the file system.")]
+            public bool DryRun { get; set; }
+
+            [Option("no-metadata", "Do not read metadata (e.g. duration) from files.")]
+            public bool NoMetadata { get; set; }
+
+            public RebuildCommand(CommandSet commandSet) : base(
+                commandSet,
                 "rebuild",
                 "Rebuild the ingestion index from disk for the provided project.")
             {
@@ -64,9 +80,14 @@ namespace Latham.Commands
 
                 IEnumerable<IngestionItem> YieldAndLog()
                 {
-                    foreach (var item in Ingestion.EnumerateIngestionFiles(project))
+                    foreach (var item in Ingestion.EnumerateIngestionFiles(project, parseMetadataFromFile: !NoMetadata))
                     {
-                        Console.WriteLine($"[{++totalItems}] {item.Duration} {item.FilePath}");
+                        Log.Information(
+                            "[{TotalItems}] {FilePath} {Duration} @ {Timestamp}",
+                            ++totalItems,
+                            item.FilePath,
+                            item.Duration,
+                            item.Timestamp);
 
                         if (item.Duration.HasValue)
                             totalDuration += item.Duration.Value;
@@ -78,12 +99,20 @@ namespace Latham.Commands
                     }
                 }
 
-                index.Reset();
-                index.Insert(YieldAndLog());
+                if (DryRun)
+                {
+                    var enumerator = YieldAndLog().GetEnumerator();
+                    while (enumerator.MoveNext());
+                }
+                else
+                {
+                    index.Reset();
+                    index.Insert(YieldAndLog());
+                }
 
-                Console.WriteLine($"count = {totalItems}");
-                Console.WriteLine($"duration = {totalDuration}");
-                Console.WriteLine($"size = {totalSize / 1024.0 / 1024.0 / 1024.0} GB");
+                Log.Information("Count = {TotalItems}", totalItems);
+                Log.Information("Duration = {TotalDuration}", totalDuration);
+                Log.Information("Size = {TotalSize} GB", totalSize / 1024.0 / 1024.0 / 1024.0);
 
                 return 0;
             }
@@ -91,7 +120,8 @@ namespace Latham.Commands
 
         public sealed class AddCommand : IndexCommand
         {
-            public AddCommand() : base(
+            public AddCommand(CommandSet commandSet) : base(
+                commandSet,
                 "add",
                 "Add or update files to the index for the provided project.")
             {
@@ -112,7 +142,8 @@ namespace Latham.Commands
             [Option("t|tag=", "Select items only matching the given tag")]
             public string? Tag { get; set; }
 
-            public QueryCommand() : base(
+            public QueryCommand(CommandSet commandSet) : base(
+                commandSet,
                 "query",
                 "Query the index for the provided project.")
             {
