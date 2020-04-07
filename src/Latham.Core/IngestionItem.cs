@@ -52,15 +52,8 @@ namespace Latham
                 new FileInfo(fullPath).Length,
                 Tag,
                 Timestamp,
-                ReadDuration(fullPath));
+                FFMpeg.ParseDuration(fullPath));
         }
-
-        static TimeSpan ReadDuration(string filePath)
-            => TagLib
-                .File
-                .Create(filePath)
-                .Properties
-                .Duration;
 
         public static IngestionItem FromFileSystem(
             string? basePath,
@@ -104,7 +97,7 @@ namespace Latham
 
             TimeSpan? duration = null;
             if (parseDuration)
-                duration = ReadDuration(fullPath);
+                duration = FFMpeg.ParseDuration(fullPath);
 
             return new IngestionItem(
                 path,

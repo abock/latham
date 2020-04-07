@@ -7,7 +7,6 @@
     <PackageReference Update="NCrontab" Version="3.3.1" />
     <PackageReference Update="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Update="SQLitePCLRaw.bundle_e_sqlite3" Version="2.0.2" />
-    <PackageReference Update="TagLibSharp" Version="2.2.0" />
     <PackageReference Update="Xamarin.Helpers" Version="0.32.0"/>
     <PackageReference Update="Xamarin.ProcessControl" Version="0.32.0"/>
 

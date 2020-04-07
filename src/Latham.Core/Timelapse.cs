@@ -100,11 +100,7 @@ namespace Latham
             foreach (var inputFile in InputFiles)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                totalDuration += TagLib
-                    .File
-                    .Create(inputFile)
-                    .Properties
-                    .Duration;
+                totalDuration += FFMpeg.ParseDuration(inputFile);
             }
 
             return totalDuration;
