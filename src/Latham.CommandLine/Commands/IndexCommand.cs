@@ -57,6 +57,50 @@ namespace Latham.Commands
 
         protected abstract int Invoke(ProjectInfo project, IngestionIndex index);
 
+        void InsertItems(IngestionIndex index, IEnumerable<IngestionItem> items, bool dryRun, bool resetIndex = false)
+        {
+            int totalItems = 0;
+            TimeSpan totalDuration = default;
+            long totalSize = 0;
+
+            IEnumerable<IngestionItem> YieldAndLog()
+            {
+                foreach (var item in items)
+                {
+                    Log.Information(
+                        "[{TotalItems}] {FilePath} {Duration} @ {Timestamp}",
+                        ++totalItems,
+                        item.FilePath,
+                        item.Duration,
+                        item.Timestamp);
+
+                    if (item.Duration.HasValue)
+                        totalDuration += item.Duration.Value;
+
+                    if (item.FileSize.HasValue)
+                        totalSize += item.FileSize.Value;
+
+                    yield return item;
+                }
+            }
+
+            if (dryRun)
+            {
+                var enumerator = YieldAndLog().GetEnumerator();
+                while (enumerator.MoveNext());
+            }
+            else
+            {
+                if (resetIndex)
+                    index.Reset();
+                index.Insert(YieldAndLog());
+            }
+
+            Log.Information("Count = {TotalItems}", totalItems);
+            Log.Information("Duration = {TotalDuration}", totalDuration);
+            Log.Information("Size = {TotalSize} GB", totalSize / 1024.0 / 1024.0 / 1024.0);
+        }
+
         public sealed class RebuildCommand : IndexCommand
         {
             [Option("dry-run", "Do not update the index on disk, just walk the file system.")]
@@ -74,62 +118,112 @@ namespace Latham.Commands
 
             protected override int Invoke(ProjectInfo project, IngestionIndex index)
             {
-                int totalItems = 0;
-                TimeSpan totalDuration = default;
-                long totalSize = 0;
-
-                IEnumerable<IngestionItem> YieldAndLog()
-                {
-                    foreach (var item in Ingestion.EnumerateIngestionFiles(project, parseMetadataFromFile: !NoMetadata))
-                    {
-                        Log.Information(
-                            "[{TotalItems}] {FilePath} {Duration} @ {Timestamp}",
-                            ++totalItems,
-                            item.FilePath,
-                            item.Duration,
-                            item.Timestamp);
-
-                        if (item.Duration.HasValue)
-                            totalDuration += item.Duration.Value;
-
-                        if (item.FileSize.HasValue)
-                            totalSize += item.FileSize.Value;
-
-                        yield return item;
-                    }
-                }
-
-                if (DryRun)
-                {
-                    var enumerator = YieldAndLog().GetEnumerator();
-                    while (enumerator.MoveNext());
-                }
-                else
-                {
-                    index.Reset();
-                    index.Insert(YieldAndLog());
-                }
-
-                Log.Information("Count = {TotalItems}", totalItems);
-                Log.Information("Duration = {TotalDuration}", totalDuration);
-                Log.Information("Size = {TotalSize} GB", totalSize / 1024.0 / 1024.0 / 1024.0);
-
+                InsertItems(
+                    index,
+                    Ingestion.EnumerateIngestionFiles(
+                        project,
+                        parseMetadataFromFile: !NoMetadata),
+                    DryRun,
+                    resetIndex: true);
                 return 0;
             }
         }
 
         public sealed class AddCommand : IndexCommand
         {
+            [Option("dry-run", "Do not update the index on disk, just walk the file system.")]
+            public bool DryRun { get; set; }
+
+            [Option("no-metadata", "Do not read metadata (e.g. duration) from files.")]
+            public bool NoMetadata { get; set; }
+
             public AddCommand(CommandSet commandSet) : base(
                 commandSet,
                 "add",
-                "Add or update files to the index for the provided project.")
+                "Add or update files to the index for the provided project. " +
+                "If no files are provided, this command will attempt to add missing" +
+                "files that match the ingestion filters since the last index addition.")
             {
             }
 
             protected override int Invoke(ProjectInfo project, IngestionIndex index)
             {
-                index.Insert(Ingestion.EnumerateIngestionFiles(project, InputFiles));
+                if (InputFiles.Count > 0)
+                {
+                    InsertItems(
+                        index,
+                        Ingestion.EnumerateIngestionFiles(
+                            project,
+                            parseMetadataFromFile:
+                            !NoMetadata,
+                            InputFiles),
+                        DryRun);
+                    return 0;
+                }
+
+                project = project.Evaluate(expandPaths: false);
+
+                if (project.Recordings is null || project.Recordings.Sources.Count == 0)
+                {
+                    Console.Error.WriteLine("No recording sources are configured on this project.");
+                    return 1;
+                }
+
+                InsertItems(
+                    index,
+                    FindNewIngestionItems(),
+                    DryRun);
+
+                IEnumerable<IngestionItem> FindNewIngestionItems()
+                {
+                    var newestTimestamp = index.SelectNewestTimestamp();
+
+                    #nullable disable
+                    foreach (var recordingSource in project.Recordings.Sources)
+                    #nullable restore
+                    {
+                        if (!recordingSource.Schedule.HasValue)
+                            continue;
+
+                        // Unfortunately NCrontab doesn't work with DateTimeOffset, so normalize to UTC.
+                        var expectedRecordingTimes = recordingSource
+                            .Schedule
+                            .Value
+                            .GetNextOccurrences(
+                                newestTimestamp.UtcDateTime,
+                                DateTime.UtcNow);
+
+                        var basePaths = new List<string>();
+
+                        foreach (var expectedRecordingTime in expectedRecordingTimes)
+                        {
+                            if (Path.GetDirectoryName(
+                                recordingSource.CreateOutputPath(
+                                    expectedRecordingTime)) is string expectedDirectory)
+
+                                if (!basePaths.Contains(expectedDirectory))
+                                    basePaths.Add(expectedDirectory);
+                        }
+
+                        foreach (var ingestion in project.Ingestions)
+                        {
+                            foreach (var basePath in basePaths)
+                            {
+                                var adjustedIngestion = new IngestionInfo(
+                                    Path.GetFileName(ingestion.PathGlob),
+                                    basePath,
+                                    ingestion.PathFilter);
+
+                                foreach (var item in Ingestion.EnumerateIngestionFiles(
+                                    adjustedIngestion,
+                                    parseMetadataFromFile: !NoMetadata,
+                                    basePath: ingestion.BasePath))
+                                    yield return item.WithFilePath(Path.Combine(basePath, item.FilePath));
+                            }
+                        }
+                    }
+                }
+
                 return 0;
             }
         }

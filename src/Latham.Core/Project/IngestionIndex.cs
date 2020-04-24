@@ -187,6 +187,15 @@ namespace Latham.Project
                 FROM Ingestions",
                 stmt => ColumnsDateTimeOffset(stmt, 1, 2)).Single();
 
+        public DateTimeOffset SelectNewestTimestamp()
+            => Select(@"
+                SELECT
+                    MAX(Timestamp - TimestampOffset),
+                    Timestamp,
+                    TimestampOffset
+                FROM Ingestions",
+                stmt => ColumnsDateTimeOffset(stmt, 1, 2)).Single();
+
         public void Insert(IngestionItem? item)
         {
             if (item is null)

@@ -44,6 +44,16 @@ namespace Latham.Project.Model
                 PathFilter = new Regex(pathFilter);
         }
 
+        public IngestionInfo(
+            string pathGlob,
+            string? basePath = null,
+            Regex? pathFilter = null)
+        {
+            PathGlob = pathGlob;
+            BasePath = basePath;
+            PathFilter = pathFilter;
+        }
+
         public IngestionInfo Evaluate(bool expandPaths)
             => new IngestionInfo(
                 PathGlob,
